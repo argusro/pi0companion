@@ -1,0 +1,9 @@
+{
+  "shoot": {
+    "enable": "1",
+    "interval": "5",
+    "start": "8",
+    "stop": "20",
+    "cron": "*/5 8-19 * * * /home/pi/shoot \n0 20 * * * /home/pi/shoot no_sleep"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "Vivo":{
+    "apn":"zap.vivo.com.br",
+    "user":"vivo",
+    "pass":"vivo"
+  },
+  "Claro":{
+    "apn":"claro.com.br",
+    "user":"claro",
+    "pass":"claro"
+  },
+  "Tim":{
+    "apn":"tim.br",
+    "user":"tim",
+    "pass":"tim"
+  },
+  "Oi":{
+    "apn":"gprs.oi.com.br",
+    "user":"oiwap",
+    "pass":"oioioi"
+  },
+  "Vodafone":{
+    "apn":"internet.vodafone.pt",
+    "user":"vodafone",
+    "pass":"vodafone"
+  },
+  "ThingsMobile":{
+    "apn":"TM",
+    "user":"",
+    "pass":""
+  }
+}

@@ -1,0 +1,53 @@
+#! /usr/bin/env python3
+#========================================================================================
+#
+#   Script to update the modem APN credentials on specific json file
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   version 3 as published by the Free Software Foundation.     
+#
+#   Use:  ./telecom <operator>
+#
+#   Version: 1.0 - 09/2023
+#   Author: ArgusR <argusr@me.com>
+#
+#========================================================================================
+import os
+import sys
+import json
+import logger
+import requests
+
+log, master_log = logger.set_logs(os.path.basename(__file__))
+
+FILE_CRED="/home/pi/db/credentials.json"
+FILE_OP="/home/pi/db/operators.json"
+
+credentials = json.loads(open(FILE_CRED).read())
+operators = json.loads(open(FILE_OP).read())
+
+if len(sys.argv) >= 2:
+  op = sys.argv[1]
+
+  if op in operators:
+    credentials['mobile_APN'] = operators[op]['apn']
+    credentials['mobile_user'] = operators[op]['user']
+    credentials['mobile_pass'] = operators[op]['pass']
+
+    with open(FILE_CRED, "w") as outfile:
+      json.dump(credentials, outfile, indent=2)
+    if 'uc' in sys.argv[2]:
+      logger.main('debug',' '.join(str(arg) for arg in sys.argv) ,log, master_log)
+      resp = requests.get('http://127.0.0.1:8000/confirm_change?item=op')
+    logger.main('warning','Telecom changed to '+op ,log, master_log)
+  else:
+    logger.main('warning','Attempt to change Telecom but operator not found: '+op ,log, master_log)
+
+  
+
+
+
+
+
+

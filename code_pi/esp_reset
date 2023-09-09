@@ -1,0 +1,58 @@
+#! /usr/bin/env python
+#========================================================================================
+#
+#   Micro-controller (uC) Reset Script
+#
+#   This script controls Raspberry GPIO pin connect to ESP reset, to reset uC and set to 
+#   upload mode.
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   version 3 as published by the Free Software Foundation.
+#
+#   Dependencies: apt install python3-rpi.gpio
+#
+#   Use: manual ./esp_reset on/off/pulse/flash
+#   Called by:  esp_burn.sh
+#
+#   Version: 2.0 - 09/2023
+#   Author: ArgusR <argusr@me.com>
+#
+#========================================================================================
+
+# Difine pinout
+gpio_reset = 23 # 17 v1.1 | 23 v1.0
+gpio_flash = 24 # 18 v1.1 | 24 v1.0
+import sys, time
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(gpio_reset, GPIO.OUT)
+GPIO.setup(gpio_flash, GPIO.OUT)
+
+status=sys.argv[1]
+
+GPIO.output(gpio_flash,True)
+
+if status == "on":
+  GPIO.output(gpio_reset,True)
+  GPIO.output(gpio_flash,True)
+elif status == "off":
+  GPIO.output(gpio_flash,False)
+  GPIO.output(gpio_reset,False)
+elif status == "pulse":
+  GPIO.output(gpio_reset,True)
+  GPIO.output(gpio_flash,True)
+  time.sleep(1/10)
+  GPIO.output(gpio_flash,False)
+  GPIO.output(gpio_reset,False)
+elif status == "flash":
+  GPIO.output(gpio_flash,True)
+  time.sleep(1)
+  GPIO.output(gpio_reset,True)
+  time.sleep(1)
+  GPIO.output(gpio_reset,False)
+elif status == "flash_off":
+  GPIO.output(gpio_flash,False)
+

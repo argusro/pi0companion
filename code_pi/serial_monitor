@@ -1,0 +1,100 @@
+#! /usr/bin/env python3
+#========================================================================================
+#
+#   Serial monitor for messages coming from Micro-controller(uC)
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   version 3 as published by the Free Software Foundation.     
+#
+#   Use:  called by FastAPI script
+#
+#   Version: 1.0 - 09/2023
+#   Author: ArgusR <argusr@me.com>
+#
+#========================================================================================
+from setproctitle import setproctitle
+setproctitle('serial_monitor')
+
+import os
+import serial
+import json
+import time
+import subprocess
+import logger
+import requests
+
+# Setup the logging
+log, master_log = logger.set_logs(os.path.basename(__file__))
+
+ser = serial.Serial('/dev/serial0', 115200, timeout=1)
+
+def interpret_json(json):
+  # Send back info to update uC menu when this script starts
+  if 'boot' in resp_json:
+    logger.main('info','uC just booted',log, master_log)
+    resp = requests.get('http://127.0.0.1:8000/update_uc')
+  # Deal with wifi changes from uC menu
+  elif 'wifi' in resp_json:
+    logger.main('info','Received wifi status change from uC to: ' + str(resp_json["wifi"]),log, master_log)
+    # Call script to do changes on Pi hotspot
+    subprocess.call("/home/pi/wifi.sh " + str(resp_json["wifi"]) + " uc", shell=True)
+    # Publish changes to Thingsboard
+    subprocess.call("/home/pi/push_attributes 'wifi_client' "+resp_json["wifi"].lower() , shell=True)
+  # Deal with streaming request from uC menu
+  elif 'stream' in resp_json:
+    logger.main('info','Received streaming status change from uC to: %s',resp_json["stream"],log, master_log)
+    subprocess.call("/home/pi/stream.sh " + str(resp_json["stream"]) + " uc", shell=True)
+  # Deal with camera cron setup coming from uC menu
+  elif 'tl_start' in resp_json:
+    logger.main('info','Received Timelapse setup from uC - Start:%sh - End:%sh - Interval:%smin', \
+        resp_json["tl_start"],resp_json["tl_end"],resp_json["tl_frequency"],log, master_log)
+    cmd = "/home/pi/set_tl.sh 1 " + str(resp_json["tl_frequency"]) + " " + \
+        str(resp_json["tl_start"]) + " "+ str(resp_json["tl_end"]) + " uc"
+    print(cmd)
+    subprocess.call(cmd , shell=True)
+  # Act on reboot request coming from uC menu
+  elif 'reboot' in resp_json:
+    logger.main('info','Received Reboot from uC',log, master_log)
+    subprocess.call('sudo reboot now' , shell=True)
+  # Act on shutdown request coming from uC menu
+  elif 'shutdown' in resp_json or 'power_cycle' in resp_json:
+    logger.main('info','Received Shutdown from uC',log, master_log)
+    msg = {}
+    msg["going_down"] = True
+    logger.main('info',msg,log, master_log)
+    data=json.dumps(msg)
+    ser.write(data.encode('ascii'))
+    ser.flush()
+    subprocess.call('sudo shutdown now' , shell=True)
+  # Deal with telecom changes coming from uC menu
+  elif 'telecom' in resp_json:
+    logger.main('info','Received Telecom change from uC to: '+ resp_json["telecom"],log, master_log)
+    cmd = "/home/pi/telecom " + resp_json["telecom"] + " uc"
+    subprocess.call(cmd , shell=True)
+  # Log any other type of messages from uC
+  elif 'message' in resp_json:
+    logger.main('info',resp_json["message"],log, master_log)
+  elif 'error' in resp_json:
+    logger.main('error',resp_json["error"],log, master_log)
+  elif 'warning' in resp_json:
+    logger.main('warning',resp_json["warning"],log, master_log)
+  # return '{"received":"ok"}'
+
+
+
+if __name__ == '__main__':
+  ser = serial.Serial('/dev/serial0', 115200, timeout=1)
+  ser.reset_input_buffer()
+  while True:
+    time.sleep(0.05)  # to reduce cpu usage
+    if ser.in_waiting > 0:
+      try:
+        resp = ser.readline().decode()
+        resp_json = json.loads(resp[:-2])
+        logger.main('debug',"Received: " + str(resp_json),log, master_log)
+        interpret_json(resp_json)
+      except Exception as e:
+        logger.main('error',str(e),log, master_log)
+      # ser.flush()
+

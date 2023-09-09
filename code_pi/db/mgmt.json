@@ -1,0 +1,7 @@
+{
+  "stream": "False",
+  "wifi": "True",
+  "uC_burning": "False",
+  "shutdown": "False",
+  "log_level": "DEBUG"
+}
